@@ -189,6 +189,11 @@ if __name__ == '__main__':
     main()
 #+end_src
 
+I have this code in a file ~process-true-false.py~ and run it like
+#+begin_src shell
+python process-true-false.py
+#+end_src
+
 
 * Installing the package
 
