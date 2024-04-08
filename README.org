@@ -1,0 +1,196 @@
+#+title: Making, grading, and sending True False Questions
+#+author: Nicky van Foreest
+
+* Intro
+
+For a few of my courses I use true-false questions, for instance, "Claim: $3 + 8 < 10$."
+Students have to choose between 'A', i.e., the claim is correct, 'B', i.e., the claim is false, or 'C' (or nothing at all) to say they don't know.
+For a correct answer they receive 1 point, for a wrong answer they lose 1 point, and for leaving it open they receive 0.1 point (so knowing not to know has some value too.)
+Just before the test I give students scrap paper on which they can write their initial answers during the test.
+During the test I show 10 such questions on the board, and students have 3 minutes to discuss and make a choice for the answer.
+Once the test is over, I distribute the answer forms to which the students can copy their final answer (By using scrap paper at first, students make much less mistakes on the final form.)
+After taking in the answer forms, I discuss the answers to that students see their score right away.
+Finally,  a machine read the answer forms and sends the answers in a excel file to me.
+
+As I use this scheme for multiple courses, I decided to make a python package that I can use for all courses.
+I asked chatgpt how to make python project; I just followed its explanation and that worked out of the box; I will not discuss that here.
+
+
+* Using the package
+
+** The  files with the questions.
+
+The tests build up over the weeks such that a test selects (with a decreasing weight) 10 problems from the learning material for this and earlier weeks.
+I publish the files to study in the course manual by including the next ~schedule.py~ file in the course manual.
+This file contains references to the source files with true false questions.
+As these questions don't change (much) over the years, I keep this files in a directory that does not depend on the year in which I give the course.
+I add the directory to the file names so that they can be found by other parts of the code (see below).
+
+#+begin_src python
+week_schedule = {
+    1: ["tf-week-1-source-questions.tex"],
+    2: ["tf-week-2-source-questions.tex"],
+    3: ["tf-week-3-source-questions.tex"],
+    4: ["tf-week-4-source-questions.tex"],
+    5: ["tf-week-5-source-questions.tex"],
+    6: ["tf-week-6-source-questions.tex"],
+}
+
+source_dir = r"../../truefalse/"
+
+week_schedule = {
+    k: [source_dir + name for name in v] for k, v in week_schedule.items()
+}
+#+end_src
+
+A question is formulated in  latex like so.
+#+begin_quote
+\begin{truefalse}
+Claim: $M_X(s)=e^{-(s-1)^2/2}$ could be a valid MGF for some rv $X$.
+\begin{solution}
+False. Note that $M_X(s)=\E{e^{sX}}$, s.t. $M_X(0)=1$ must always hold.
+\end{solution}
+\end{truefalse}
+#+end_quote
+
+
+** Making a test
+
+
+For a course I have a directory ~2324/truefalse~ in which I make the tex files with the test, the questions and the answers for the academic year 2324.
+In this directory I run the next code.
+
+#+begin_src shell
+python make-tutorial-problems.py
+#+end_src
+
+Here is ~make-tutorial-problems.py~.
+It calls a function provided by ~tutorial~ and reads the relevant files from ~schedule.py~.
+I use a latex preamble that it common to all other latex material I use for the course.
+The private seed is used by the random number generator to select the problems and state whether the answer to the problem in the test should be true or false.
+The seed used by the number generators is the lecture week plus the private seed, hence the seed changes from week to week.
+The rest of the info is used to make the title page for the test.
+
+The ~overwrite~ flag prevents overwriting a once made test. See below for further explanation.
+
+
+#+begin_src python
+from tutorial import make_tutorial_test
+from schedule import week_schedule
+
+course_name = "Probability Distribution (PD))"
+course_code = "EBP038A05"
+year = "2023-2024"
+authors = ["Me", "myself", "and I"]
+preamble_file = r"../../common/preamble"
+private_seed = 1  #  seed for random selection of questions and answers
+
+make_tutorial_test(
+    lecture_week=3,
+    test_date="Thursday, April 11, 2024",
+    overwrite=False,
+    private_seed=private_seed,
+    week_schedule=week_schedule,
+    course=course_name,
+    code=course_code,
+    year=year,
+    authors=authors,
+    preamble_file=preamble_file,
+)
+
+make_tutorial_test(
+    lecture_week=4,
+    test_date="Thursday, April 18, 2024",
+    overwrite=False,
+    private_seed=private_seed,
+    week_schedule=week_schedule,
+    course=course_name,
+    code=course_code,
+    year=year,
+    authors=authors,
+    preamble_file=preamble_file,
+)
+#+end_src
+
+After running this code, I get a file for a test, another for the test questions with the anwers (the file I use when discussing the answers in class), and a file with questions that it used by the test and the answer file.
+I edit the file with the questions by hand in such a way that the question is in line with whether (according to the random number geneator) the claim of the question should be true or false.
+For ease, I include the answer provided with the questions that have been given to the students to prepare for the test.
+Once I am done editing, I make the test and answer files with ~pdflatex~. Of course, when I have editted the questions, I don't want to overwrite it by chance, hence the ~overwrite~ flag.
+
+** Grading the test
+
+After the test, the answers are read by some machine and then I get an xlsx file with the answers.
+The scores on the tests are used to compute the final grades.
+As I don't like to mess up grading and test material, I have a separate directory ~2324/grading/~.
+This directory contains the xlsx files with the answers of the students.
+
+Here is the code to grade the true false test, and send the material to the students by mail.
+Each tutorial has a date, lecture week, and an answer key.
+I store this in ~Tutorial~ objects, one object per test.
+As the weeks progress, I make more tutorial objects, and add them to the list with tutorials.
+At the end of the course (after the final exam), this list is used to compute the final grade for the course.
+
+I always ask a student to be willing to act as a test student.
+I send this student the initial results to have it checked.
+Once this is ok, I send the mail to all students.
+This idea is underlying the switches ~send_mail=True~ and ~test=True~.
+Only when ~send_mail=True~ and ~test=False~ all students will receive a mail.
+
+#+begin_src python
+from tutorial import Tutorial, send_tutorial_mails
+
+mail_account = "some mail account"
+mail_passwd = "this is a passwd"
+file_with_emails = "names_emails_from_brightspace.csv"
+test_student = "s123456"  # student Icebear
+course_name = "Probability Distributions"
+
+tutorial_1 = Tutorial(
+    answer_key={
+        1: 2,
+        2: 2,
+        3: 1,
+        4: 1,
+        5: 2,
+        6: 1,
+        7: 2,
+        8: 1,
+        9: 2,
+        10: 1,
+    },
+    filename='./PRODIS_44_28032024.XLSX',
+    date="Thurday March 28, 2024",
+    name="tutorial 1",
+    course=course_name,
+)
+
+
+tutorials = [tutorial_1]
+
+
+def handle_tutorial(tutorial):
+    tutorial.stats()
+    send_tutorial_mails(
+        tutorial=tutorial,
+        file_with_emails=file_with_emails,
+        test_student=test_student,
+        mail_account=mail_account,
+        mail_passwd=mail_passwd,
+        send_mail=False,
+        test=True,
+    )
+
+
+def main()
+    handle_tutorial(tutorial_1)
+
+
+if __name__ == '__main__':
+    main()
+#+end_src
+
+
+* Installing the package
+
+I keep the code in my private python directory ~python/tutorial~. Running ~pip install .~ installs the package in my ~.direnv~.
+I asked chatgpt how to make a package; it worked out of the box.
