@@ -44,14 +44,14 @@ week_schedule = {
 #+end_src
 
 A question is formulated in  latex like so.
-#+begin_quote
+#+begin_verse
 \begin{truefalse}
 Claim: $M_X(s)=e^{-(s-1)^2/2}$ could be a valid MGF for some rv $X$.
 \begin{solution}
 False. Note that $M_X(s)=\E{e^{sX}}$, s.t. $M_X(0)=1$ must always hold.
 \end{solution}
 \end{truefalse}
-#+end_quote
+#+end_verse
 
 
 ** Making a test
