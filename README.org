@@ -199,3 +199,8 @@ python process-true-false.py
 
 I keep the code in my private python directory ~python/tutorial~. Running ~pip install .~ installs the package in my ~.direnv~.
 I asked chatgpt how to make a package; it worked out of the box.
+
+#+begin_src shell
+cd ~/python/tutorial
+pip install .
+#+end_src

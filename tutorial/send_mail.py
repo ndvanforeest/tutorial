@@ -88,8 +88,9 @@ def send_tutorial_mails(
 
         if send_mail:
             receiver_email = student["email"]
-            if test:
-                receiver_email = mail_account
+            # With the code I can mail myself. However, I never seem to need that.
+            # if test:
+            #    receiver_email = mail_account
             session.sendmail(mail_account, receiver_email, message.as_string())
 
     print('Sent')

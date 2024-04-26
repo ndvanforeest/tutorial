@@ -29,59 +29,40 @@ def weighted_sample(a, w, k, gen):
     return r
 
 
-def make_common_header(
+def make_title_page(
     course,
     code,
     year,
     authors,
     lecture_week,
-    test_date,
+    date_of_test,
 ):
     return [
-        r"\usepackage[a5paper,landscape]{geometry}",
         r"\title{",
-        f"{course}",
-        rf"{code}, {year}\\",
+        rf"{course} {year}\\",
+        rf"{code}\\",
         rf"Lecture week {lecture_week}\\",
-        f"{test_date}",
+        f"{date_of_test}",
         "}",
         r"\author{",  # finish tilte
         "\\\\\n".join(author for author in authors),
         "}",  # finish authors
         r"\date{}",
-        r"\AtEndEnvironment{truefalse}{\clearpage}",
-        r"\begin{document}",
-        r"\maketitle",
-        r"\clearpage",
-        r"\begin{enumerate}",
-        r"\item  Recall: If you think that: `Claim: 3 + 5 = 9' is True, choose $A$",
-        r"on the answer form; if you think is it False choose $B$.",
-        r"Otherwise, just leave it open, or fill in $C$.",
-        r"\item True/False: Have you put your mobile/laptop/book/other printed material in your bag? Hopefully it's a YES!",
-        r"\item You are allowed to discuss with your fellow students, but don't scream; keep the discussion decent.",
-        r"\item You are responsible for your own answer.",
-        r"\item You have three minutes per question.",
-        r"\item In the second hour of the tutorial we'll discuss the answers.",
-        r"\end{enumerate}",
-        r"\clearpage",
-    ]
-    return "\n".join(t for t in text)
-
-
-def make_test_header(preamble_file):
-    return [
-        r"\documentclass[a5paper,12pt,landscape]{article}",
-        r"\usepackage[nosolutions]{optional}",
-        rf"\usepackage{{{preamble_file}}}",
     ]
 
 
-def make_answer_header(preamble_file):
-    return [
-        r"\documentclass[12pt]{article}",
-        r"\usepackage[check]{optional}",
-        rf"\usepackage{{{preamble_file}}}",
-    ]
+readme_page = [
+    r"\begin{enumerate}",
+    r"\item  Recall: If you think that: `Claim: 3 + 5 = 9' is True, choose $A$",
+    r"on the answer form; if you think is it False choose $B$.",
+    r"Otherwise, just leave it open, or fill in $C$.",
+    r"\item True/False: Have you put your mobile, laptop, book, other printed material in your bag? Hopefully it's a YES!",
+    r"\item You are allowed to discuss with your fellow students, but don't scream; keep the discussion decent.",
+    r"\item You are responsible for your own answer.",
+    r"\item You have three minutes per question.",
+    r"\item In the second hour of the tutorial we'll discuss the answers.",
+    r"\end{enumerate}",
+]
 
 
 def make_latex_footer():
@@ -101,7 +82,7 @@ def extract_truefalse_problems(filename, gen):
     matches = re.findall(pattern, content, re.DOTALL)
     for exercise in matches:
         problem = "\\begin{truefalse}"
-        problem += "\\Large"
+        # problem += "\\Large"
         """Force a random solution. I adapt the problem occordingly
         after the test is generated."""
         answer = "\nA (True).\n" if gen.uniform() > 0.5 else "\nB (False).\n"
@@ -119,7 +100,7 @@ def make_tutorial_test(
     year,
     authors,
     lecture_week,
-    test_date,
+    date_of_test,
     preamble_file,
     private_seed,
     week_schedule,
@@ -159,25 +140,56 @@ def make_tutorial_test(
         text.append(r"\end{document}")
         fp.write("\n".join(t for t in text))
 
-    common_header = make_common_header(
+    title_page = make_title_page(
         course,
         code,
         year,
         authors,
         lecture_week,
-        test_date,
+        date_of_test,
     )
 
     with open(f"tf-{lecture_week}-test.tex", "w", encoding='utf-8') as fp:
-        text = make_test_header(preamble_file)
-        text += common_header
-        text.append(rf"\subfile{{tf-{lecture_week}-questions.tex}}")
+        text = [
+            r"\documentclass{article}",
+            r"\usepackage[nosolutions]{optional}",
+            rf"\usepackage{{{preamble_file}}}",
+            r"\usepackage[a5paper,landscape]{geometry}",
+            r"\usepackage{anyfontsize}",
+            r"\linespread{1.3}",
+        ]
+        text += title_page
+        text += [
+            r"\AtEndEnvironment{truefalse}{\clearpage}",
+            r"\begin{document}",
+            r"\maketitle",
+            r"\clearpage",
+            r"\fontsize{15}{15}",
+            r"\selectfont",
+        ]
+        text += readme_page
+        text += [
+            r"\clearpage",
+            r"\fontsize{25}{25}",
+            r"\selectfont",
+            rf"\subfile{{tf-{lecture_week}-questions.tex}}",
+        ]
         text += make_latex_footer()
         fp.write("\n".join(t for t in text))
 
     with open(f"tf-{lecture_week}-answers.tex", "w", encoding='utf-8') as fp:
-        text = make_answer_header(preamble_file)
-        text += common_header
+        text = [
+            r"\documentclass[a4paper,12pt]{article}",
+            r"\usepackage[check]{optional}",
+            rf"\usepackage{{{preamble_file}}}",
+            r"\usepackage{a4wide}",
+        ]
+        text += title_page
+        text += [
+            r"\begin{document}",
+            r"\maketitle",
+        ]
+        text += readme_page
         text.append(rf"\subfile{{tf-{lecture_week}-questions.tex}}")
         text += make_latex_footer()
         fp.write("\n".join(t for t in text))
